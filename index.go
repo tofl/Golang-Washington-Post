@@ -4,14 +4,23 @@ import (
 	"fmt"
 	"net/http"
 	"io/ioutil"
-	//"encoding/xml"
+	"encoding/xml"
 )
 
 func main() {
 	resp, _ := http.Get("https://www.washingtonpost.com/news-sitemaps/index.xml")
 	bytes, _ := ioutil.ReadAll(resp.Body)
-	stringBody := string(bytes)
 	resp.Body.Close()
-	fmt.Println(stringBody)
+
+	var s SitemapIndex
+	xml.Unmarshal(bytes, &s)
+	
+	for _, Location := range s.Locations {
+		fmt.Printf("%s", Location)
+	}
+}
+
+type SitemapIndex struct {
+	Locations []string `xml:"sitemap>loc"`
 }
 
