@@ -49,7 +49,7 @@ func newsAggHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Body.Close()
 	}
 
-	p := newsAggPage{Title: "Hello world", News: newsMap}
+	p := newsAggPage{Title: "Latest News", News: newsMap}
 	t, _ := template.ParseFiles("basictemplate.html")
 	t.Execute(w, p)
 }
