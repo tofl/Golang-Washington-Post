@@ -3,24 +3,12 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
 func main() {
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/agg", newsAggHandler)
-	http.ListenAndServe(":8000", nil)
-}
-
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>Go is really really neat</h1>")
-}
-
-func newsAggHandler(w http.ResponseWriter, r *http.Request) {
-
 	var s SitemapIndex
 	var n News
 	newsMap := make(map[string]NewsMap)
@@ -49,14 +37,12 @@ func newsAggHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Body.Close()
 	}
 
-	p := newsAggPage{Title: "Hello world", News: newsMap}
-	t, _ := template.ParseFiles("basictemplate.html")
-	t.Execute(w, p)
-}
+	for idx, data := range newsMap {
+		fmt.Println("\n\n\n", idx)
+		fmt.Println("\n", data.Keyword)
+		fmt.Println("\n", data.Location)
+	}
 
-type newsAggPage struct {
-	Title string
-	News  map[string]NewsMap
 }
 
 type SitemapIndex struct {
