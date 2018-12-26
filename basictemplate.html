@@ -7,6 +7,25 @@
 
 	<body>
 		<h1>{{ .Title }}</h1>
-		<p>{{ .News }}</p>
+		
+		<table>
+			<col width="35%">
+			<col width="65%">
+			<thead>
+				<tr>
+					<th>Title</th>
+					<th>Keywords</th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ range $key, $value := .News }}
+				 <tr>
+					<td><a href="{{ $value.Location }}" target='_blank'>{{ $key }}</td>
+					<td>{{ $value.Keyword }}</td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>		
+
 	</body>
 </html>
