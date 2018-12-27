@@ -7,12 +7,32 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 )
+
+var wg sync.WaitGroup
 
 func main() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/agg", newsAggHandler)
 	http.ListenAndServe(":8000", nil)
+}
+
+func newsRoutine(c chan News, Location string) {
+	defer wg.Done()
+	var n News
+
+	resp, err := http.Get(strings.TrimSpace(Location))
+	if err != nil {
+		fmt.Println("Response :", resp)
+		fmt.Println("Error :", err)
+		return
+	}
+	bytes, _ := ioutil.ReadAll(resp.Body)
+	xml.Unmarshal(bytes, &n)
+	resp.Body.Close()
+
+	c <- n
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +42,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func newsAggHandler(w http.ResponseWriter, r *http.Request) {
 
 	var s SitemapIndex
-	var n News
 	newsMap := make(map[string]NewsMap)
 
 	resp, _ := http.Get("https://www.washingtonpost.com/news-sitemaps/index.xml")
@@ -31,22 +50,20 @@ func newsAggHandler(w http.ResponseWriter, r *http.Request) {
 
 	xml.Unmarshal(bytes, &s)
 
+	queue := make(chan News, 30)
+
 	for _, Location := range s.Locations {
-		resp, err := http.Get(strings.TrimSpace(Location))
-		if err != nil {
-			fmt.Println("Response :", resp)
-			fmt.Println("Error :", err)
-			return
-		}
-		bytes, _ := ioutil.ReadAll(resp.Body)
+		wg.Add(1)
+		go newsRoutine(queue, Location)
+	}
 
-		resp.Body.Close()
+	wg.Wait()
+	close(queue)
 
-		xml.Unmarshal(bytes, &n)
-		for idx, _ := range n.Titles {
-			newsMap[n.Titles[idx]] = NewsMap{n.Keywords[idx], n.Locations[idx]}
+	for elem := range queue {
+		for idx, _ := range elem.Keywords {
+			newsMap[elem.Titles[idx]] = NewsMap{elem.Keywords[idx], elem.Locations[idx]}
 		}
-		resp.Body.Close()
 	}
 
 	p := newsAggPage{Title: "Latest News", News: newsMap}
